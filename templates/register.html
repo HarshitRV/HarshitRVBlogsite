@@ -1,0 +1,37 @@
+{% include "header.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+<header class="masthead"
+    style="background-image: url('https://images.unsplash.com/photo-1470092306007-055b6797ca72?ixlib=rb-1.2.1&auto=format&fit=crop&w=668&q=80')">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="site-heading">
+                    <h1>Register</h1>
+                    <span class="subheading">Register to read and write and comment.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- main content -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <!-- Add WTF quickform -->
+            {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+
+        </div>
+    </div>
+</div>
+
+{% include "footer.html" %}
