@@ -2,6 +2,7 @@ BlogENV/
 posts.db
 test.py
 .DS_Store
+blog.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

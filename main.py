@@ -1,14 +1,26 @@
-import re
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, abort
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
+
+# sqlalchemy is imported for exception handling related to sqlalchemy
 import sqlalchemy
+
+# sqlalchemy.orm is required for the crating realtionships between tables
+from sqlalchemy.orm import relationship
 from post_form import CreatePostForm, CreateLoginForm, CreateRegisterForm
 from flask_ckeditor import CKEditor
-from flask_login import UserMixin
+
+# imports required for session management
+from flask_login import UserMixin, LoginManager, login_required, login_user, logout_user, current_user
+
+# import required for password hashing
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 
+# creating the wrapper for the admin_only decorator
+from functools import wraps
+
+# setting up the app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 ckeditor = CKEditor(app)
@@ -16,38 +28,64 @@ Bootstrap(app)
 
 ##CONNECT TO DB
 app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# CONFIGURE TABLE BLOG DB
-class BlogPost(db.Model):
-    __tablename__ = "blog_post"
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    subtitle = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(250), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(250), nullable=False)
-    img_url = db.Column(db.String(250), nullable=False)
+# login manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # CONFIGURE TABLE USER DB
 
 class User(UserMixin, db.Model):
-    __tablename__ = "user_db"
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
-    name = db.Column(db.String(1000)) 
+    name = db.Column(db.String(100))
+    
+    # This will act like a List of BlogPost objects attached to each User. 
+    # The "author" refers to the author property in the BlogPost class.
+    posts = relationship("BlogPost", back_populates="author")
+    
+class BlogPost(db.Model):
+    __tablename__ = "blog_posts"
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Created Foreign Key, "users.id" the users refers to the tablename of User.
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    #Create reference to the User object, the "posts" refers to the posts property in the User class.
+    author = relationship("User", back_populates="posts")
+   
+    title = db.Column(db.String(250), unique=True, nullable=False)
+    subtitle = db.Column(db.String(250), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    img_url = db.Column(db.String(250), nullable=False)
 
 # db.create_all()
-# Getting all posts
-posts = db.session.query(BlogPost).all()
+
+
+# admin only decorator
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        #If id is not 1 then return abort with 403 error
+        if current_user.id != 1:
+            return abort(403)
+        #Otherwise continue with the route function
+        return f(*args, **kwargs)        
+    return decorated_function
 
 @app.route('/')
 def home():
-
-    return render_template("index.html", all_posts=posts)
+    blogs = db.session.query(BlogPost).all()
+    return render_template("index.html", all_posts=blogs)
 
 
 @app.route("/post/<int:index>")
@@ -59,12 +97,17 @@ def show_post(index):
 def new_post():
     form = CreatePostForm()
     today = datetime.datetime.now().date()
+    if not current_user.is_authenticated:
+        flash("You must be logged in to create a post", "danger")
+        return redirect(url_for('login'))
     if form.validate_on_submit():
         new_blog = BlogPost(
             title=form.title.data,
             subtitle=form.subtitle.data,
             date=today,
-            author=form.author.data,
+
+            # author expects the user object to be passed in
+            author=current_user,
             img_url=form.img_url.data,
             body=form.body.data
         )
@@ -84,6 +127,8 @@ def contact():
     return render_template("contact.html")
 
 @app.route("/edit-post/<int:id>", methods=["GET", "POST"])
+@login_required
+@admin_only
 def edit_post(id):
     to_edit = BlogPost.query.get(id)
     edit_blog = CreatePostForm(
@@ -101,6 +146,8 @@ def edit_post(id):
     return render_template("make-post.html", form=edit_blog, is_edit=True, purpose="Edit Post")
 
 @app.route("/delete-post/<id>")
+@login_required
+@admin_only
 def delete_post(id):
     delete_post = BlogPost.query.get(int(id))
     db.session.delete(delete_post)
@@ -111,9 +158,24 @@ def delete_post(id):
 def login():
     form = CreateLoginForm()
     if form.validate_on_submit():
-        email = form.email.data
-        password = form.password.data
+        user = User.query.filter_by(email=form.email.data).first()
+        try:
+            if check_password_hash(user.password, form.password.data):
+                login_user(user)
+                return redirect(url_for('home'))
+            else:
+                flash('Password incorrect, please try again.')
+                return redirect(url_for('login'))
+        except AttributeError:
+            flash('No user with that email address exists.')
+            return redirect(url_for('register'))
+
     return render_template("login.html", form=form)
+
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for("home"))
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -133,7 +195,8 @@ def register():
         try:
             db.session.add(new_user)
             db.session.commit()
-            return redirect(url_for("home"))
+            flash("Thanks for registering! Login to write, edit comment.")
+            return redirect(url_for("login"))
         except sqlalchemy.exc.IntegrityError:
             flash("You've already signed up with that email, log in instead!")
             return redirect(url_for("login"))
@@ -141,4 +204,4 @@ def register():
     return render_template("register.html", form=form)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000,debug=True)
