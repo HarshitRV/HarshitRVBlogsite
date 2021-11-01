@@ -96,10 +96,10 @@ class Comment(db.Model):
     comment_author = relationship("User", back_populates="comments")
     
 
-try:
-    db.create_all()
-except sqlite3.OperationalError:
-    pass
+# try:
+#     db.create_all()
+# except sqlite3.OperationalError:
+#     pass
 
 
 # admin only decorator
