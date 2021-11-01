@@ -5,6 +5,7 @@ from flask_gravatar import Gravatar
 
 # sqlalchemy is imported for exception handling related to sqlalchemy
 import sqlalchemy
+import sqlite3
 
 # sqlalchemy.orm is required for the crating realtionships between tables
 from sqlalchemy.orm import relationship
@@ -95,7 +96,10 @@ class Comment(db.Model):
     comment_author = relationship("User", back_populates="comments")
     
 
-db.create_all()
+try:
+    db.create_all()
+except sqlite3.OperationalError:
+    pass
 
 
 # admin only decorator
