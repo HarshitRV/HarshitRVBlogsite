@@ -5,7 +5,7 @@ from flask_gravatar import Gravatar
 
 # sqlalchemy is imported for exception handling related to sqlalchemy
 import sqlalchemy
-import sqlite3
+import os
 
 # sqlalchemy.orm is required for the crating realtionships between tables
 from sqlalchemy.orm import relationship
@@ -38,8 +38,8 @@ gravatar = Gravatar(
 )
 
 ##CONNECT TO DB
-app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",  "sqlite:///blog.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
