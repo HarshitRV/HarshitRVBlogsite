@@ -247,5 +247,7 @@ def register():
 
     return render_template("register.html", form=form)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=3000,debug=True)
+# needed for local server
+
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0', port=3000,debug=True)
