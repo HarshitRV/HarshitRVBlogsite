@@ -1,13 +1,14 @@
 from flask import Flask, render_template, redirect, url_for, flash, abort
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
+from flask_gravatar import Gravatar
 
 # sqlalchemy is imported for exception handling related to sqlalchemy
 import sqlalchemy
 
 # sqlalchemy.orm is required for the crating realtionships between tables
 from sqlalchemy.orm import relationship
-from post_form import CreatePostForm, CreateLoginForm, CreateRegisterForm
+from post_form import CreatePostForm, CreateLoginForm, CreateRegisterForm, CommentForm
 from flask_ckeditor import CKEditor
 
 # imports required for session management
@@ -25,6 +26,15 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 ckeditor = CKEditor(app)
 Bootstrap(app)
+gravatar = Gravatar(
+    app, size=100,
+    rating='g',
+    default='retro',
+    force_default=False,
+    force_lower=False,
+    use_ssl=False,
+    base_url=None
+)
 
 ##CONNECT TO DB
 app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
@@ -52,6 +62,10 @@ class User(UserMixin, db.Model):
     # This will act like a List of BlogPost objects attached to each User. 
     # The "author" refers to the author property in the BlogPost class.
     posts = relationship("BlogPost", back_populates="author")
+
+    # Add parent relationship to Comment class
+    # "comment_author" refers to the comment_author property in the Comment class.
+    comments = relationship("Comment", back_populates="comment_author")
     
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
@@ -67,8 +81,21 @@ class BlogPost(db.Model):
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
+   
 
-# db.create_all()
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+
+    # Add child relationship to Comment class
+    # "users.id" The users refers to the tablename of the Users class.
+    # "comments" refers to the comments property in the User class.
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    comment_author = relationship("User", back_populates="comments")
+    
+
+db.create_all()
 
 
 # admin only decorator
@@ -88,10 +115,27 @@ def home():
     return render_template("index.html", all_posts=blogs)
 
 
-@app.route("/post/<int:index>")
+@app.route("/post/<int:index>", methods=["GET", "POST"])
 def show_post(index):
+    form = CommentForm()
+
+    # Get the post from the database
     requested_post = BlogPost.query.get(int(index))
-    return render_template("post.html", post=requested_post)
+
+    # Get all the comments for the post
+    all_comments = db.session.query(Comment).all()
+
+    # Check if the form was submitted
+    if form.validate_on_submit():
+        try:
+            comment = Comment(text=form.body.data, author_id=current_user.id)
+            db.session.add(comment)
+            db.session.commit()
+            return redirect(url_for("show_post", index=index))
+        except AttributeError:
+            flash("You must be logged in to comment", "danger")
+            return redirect(url_for("login"))
+    return render_template("post.html", post=requested_post, form=form, comments=all_comments)
 
 @app.route("/new-post", methods=["GET", "POST"])
 def new_post():
@@ -138,7 +182,7 @@ def edit_post(id):
         to_edit.title = edit_blog.title.data
         to_edit.subtitle = edit_blog.subtitle.data
         to_edit.img_url = edit_blog.img_url.data
-        to_edit.author = edit_blog.author.data
+        to_edit.author = current_user
         to_edit.body = edit_blog.body.data
         db.session.commit()
         
