@@ -5,6 +5,7 @@ from flask_gravatar import Gravatar
 
 # sqlalchemy is imported for exception handling related to sqlalchemy
 import sqlalchemy
+import os
 
 # sqlalchemy.orm is required for the crating realtionships between tables
 from sqlalchemy.orm import relationship
@@ -37,8 +38,8 @@ gravatar = Gravatar(
 )
 
 ##CONNECT TO DB
-app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",  "sqlite:///blog.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -95,7 +96,9 @@ class Comment(db.Model):
     comment_author = relationship("User", back_populates="comments")
     
 
-db.create_all()
+
+# db.create_all()
+
 
 
 # admin only decorator
@@ -247,5 +250,7 @@ def register():
 
     return render_template("register.html", form=form)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=3000,debug=True)
+# needed for local server
+
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0', port=3000,debug=True)
