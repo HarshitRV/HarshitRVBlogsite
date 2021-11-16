@@ -19,3 +19,4 @@
     python3 main.py
 ```
 6. Once the server starts comment the line at 98 in [main.py](main.py). As we no longer need it since the database has been created after first spin of the server.
+# [Visit the site !](https://harshitrv-blog.herokuapp.com/)
