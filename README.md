@@ -1,5 +1,5 @@
 # Check [requirements](requirements.txt).
-# Running on local server.
+# Running on local server (branch devlopment-server).
 1. Create a virtual environment.
 ```bash
     python3 -m venv venv
@@ -12,7 +12,11 @@
 ```bash
     pip install -r requirements.txt
 ```
-4. Run the application.
+4. Uncomment the line at 98 in [main.py](main.py), when running the server for first time for creating the database.
+
+5. Run the application.
 ```bash
-    python main.py
+    python3 main.py
 ```
+6. Once the server starts comment the line at 98 in [main.py](main.py). As we no longer need it since the database has been created after first spin of the server.
+# [Visit the site !](https://harshitrv-blog.herokuapp.com/)
