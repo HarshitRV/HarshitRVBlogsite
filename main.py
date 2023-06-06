@@ -14,17 +14,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-
-# sqlalchemy is imported for exception handling related to sqlalchemy
-
-# sqlalchemy.orm is required for the crating realtionships between tables
-
-# imports required for session management
-
-# import required for password hashing
-
-# creating the wrapper for the admin_only decorator
-
 # setting up the app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
