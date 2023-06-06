@@ -98,7 +98,7 @@ platformdirs==3.0.0
 portpicker==1.2.0
 preshed==3.0.8
 prometheus-client==0.16.0
-prompt-toolkit==1.0.18
+prompt-toolkit>=3.0.30
 psutil==5.9.4
 ptyprocess==0.7.0
 pure-eval==0.2.2
