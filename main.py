@@ -1,26 +1,29 @@
-from flask import Flask, render_template, redirect, url_for, flash, abort
-from flask_bootstrap import Bootstrap
-from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
+import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin, LoginManager, login_required, login_user, logout_user, current_user
+from flask_ckeditor import CKEditor
+from post_form import CreatePostForm, CreateLoginForm, CreateRegisterForm, CommentForm
+from sqlalchemy.orm import relationship
+import sqlalchemy
 from flask_gravatar import Gravatar
+from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
+from flask import Flask, render_template, redirect, url_for, flash, abort
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # sqlalchemy is imported for exception handling related to sqlalchemy
-import sqlalchemy
-import os
 
 # sqlalchemy.orm is required for the crating realtionships between tables
-from sqlalchemy.orm import relationship
-from post_form import CreatePostForm, CreateLoginForm, CreateRegisterForm, CommentForm
-from flask_ckeditor import CKEditor
 
 # imports required for session management
-from flask_login import UserMixin, LoginManager, login_required, login_user, logout_user, current_user
 
 # import required for password hashing
-from werkzeug.security import generate_password_hash, check_password_hash
-import datetime
 
 # creating the wrapper for the admin_only decorator
-from functools import wraps
 
 # setting up the app
 app = Flask(__name__)
