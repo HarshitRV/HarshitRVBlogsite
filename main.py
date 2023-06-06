@@ -37,7 +37,7 @@ gravatar = Gravatar(
     base_url=None
 )
 
-##CONNECT TO DB
+# CONNECT TO DB
 app.config['SECRET_KEY'] = "thisISsECRET"
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///blog.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -47,11 +47,13 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 # CONFIGURE TABLE USER DB
+
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -59,30 +61,31 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(100))
-    
-    # This will act like a List of BlogPost objects attached to each User. 
+
+    # This will act like a List of BlogPost objects attached to each User.
     # The "author" refers to the author property in the BlogPost class.
     posts = relationship("BlogPost", back_populates="author")
 
     # Add parent relationship to Comment class
     # "comment_author" refers to the comment_author property in the Comment class.
     comments = relationship("Comment", back_populates="comment_author")
-    
+
+
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
     id = db.Column(db.Integer, primary_key=True)
-    
+
     # Created Foreign Key, "users.id" the users refers to the tablename of User.
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    #Create reference to the User object, the "posts" refers to the posts property in the User class.
+    # Create reference to the User object, the "posts" refers to the posts property in the User class.
     author = relationship("User", back_populates="posts")
-   
+
     title = db.Column(db.String(250), unique=True, nullable=False)
     subtitle = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
-   
+
 
 class Comment(db.Model):
     __tablename__ = "comments"
@@ -94,23 +97,22 @@ class Comment(db.Model):
     # "comments" refers to the comments property in the User class.
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     comment_author = relationship("User", back_populates="comments")
-    
 
 
-# db.create_all()
-
+db.create_all()
 
 
 # admin only decorator
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        #If id is not 1 then return abort with 403 error
+        # If id is not 1 then return abort with 403 error
         if current_user.id > 2:
             return abort(403)
-        #Otherwise continue with the route function
-        return f(*args, **kwargs)        
+        # Otherwise continue with the route function
+        return f(*args, **kwargs)
     return decorated_function
+
 
 @app.route('/')
 def home():
@@ -140,6 +142,7 @@ def show_post(index):
             return redirect(url_for("login"))
     return render_template("post.html", post=requested_post, form=form, comments=all_comments)
 
+
 @app.route("/new-post", methods=["GET", "POST"])
 def new_post():
     form = CreatePostForm()
@@ -164,6 +167,7 @@ def new_post():
         return redirect(url_for('home'))
     return render_template("make-post.html", form=form, purpose="Make Post")
 
+
 @app.route("/about")
 def about():
     return render_template("about.html")
@@ -179,7 +183,7 @@ def about():
 def edit_post(id):
     to_edit = BlogPost.query.get(id)
     edit_blog = CreatePostForm(
-      obj= to_edit 
+        obj=to_edit
     )
     if edit_blog.validate_on_submit():
         to_edit.title = edit_blog.title.data
@@ -188,9 +192,10 @@ def edit_post(id):
         to_edit.author = current_user
         to_edit.body = edit_blog.body.data
         db.session.commit()
-        
+
         return redirect(url_for("show_post", index=id))
     return render_template("make-post.html", form=edit_blog, is_edit=True, purpose="Edit Post")
+
 
 @app.route("/delete-post/<id>")
 @login_required
@@ -200,6 +205,7 @@ def delete_post(id):
     db.session.delete(delete_post)
     db.session.commit()
     return redirect(url_for('home'))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -219,20 +225,22 @@ def login():
 
     return render_template("login.html", form=form)
 
+
 @app.route("/logout")
 def logout():
     logout_user()
     return redirect(url_for("home"))
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     form = CreateRegisterForm()
     if form.validate_on_submit():
-        
+
         new_user = User(
-            name = form.name.data,
-            email = form.email.data,
-            password = generate_password_hash(
+            name=form.name.data,
+            email=form.email.data,
+            password=generate_password_hash(
                 form.password.data,
                 method="pbkdf2:sha256",
                 salt_length=8
@@ -252,5 +260,6 @@ def register():
 
 # needed for local server
 
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=3000,debug=True)
+    app.run()
